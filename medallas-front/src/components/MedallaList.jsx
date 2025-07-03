@@ -37,39 +37,6 @@ const MedallaList = () => {
     }
     setMostrarModal(true);
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
   };
 
   const cerrarModal = () => {
