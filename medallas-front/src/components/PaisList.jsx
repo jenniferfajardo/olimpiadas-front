@@ -1,20 +1,31 @@
 // Importa React y los hooks necesarios
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 // Importa las funciones de servicio para realizar operaciones CRUD sobre países
-import { getPaises, createPais, updatePais, deletePais } from '../services/paissService';
+import {
+  getPaises,
+  createPais,
+  updatePais,
+  deletePais,
+  getPaisConMedallas,
+} from "../services/paissService";
 
 // Componente funcional que muestra y gestiona una lista de países
 const PaisList = () => {
   // Estado que guarda el arreglo de países
   const [paises, setPaises] = useState([]);
   // Estado para el nombre del país en el formulario
-  const [nombre, setNombre] = useState('');
+  const [nombre, setNombre] = useState("");
   // Estado para el código del país (ej. ARG, COL, etc.)
-  const [codigo, setCodigo] = useState('');
+  const [codigo, setCodigo] = useState("");
   // Estado que guarda el país que se está editando (null si se está creando uno nuevo)
   const [editando, setEditando] = useState(null);
   // Estado que controla si el modal está visible o no
   const [mostrarModal, setMostrarModal] = useState(false);
+
+  // Para mostrar medallas asociadas a un país
+  const [medallas, setMedallas] = useState([]);
+  const [paisSeleccionado, setPaisSeleccionado] = useState(null);
+  const [mostrarMedallas, setMostrarMedallas] = useState(false);
 
   // Función asincrónica para obtener los países desde el backend
   const fetchPaises = async () => {
@@ -37,8 +48,8 @@ const PaisList = () => {
     } else {
       // Si no se pasa país, se está creando uno nuevo
       setEditando(null);
-      setNombre('');
-      setCodigo('');
+      setNombre("");
+      setCodigo("");
     }
     setMostrarModal(true); // Muestra el modal
   };
@@ -47,8 +58,8 @@ const PaisList = () => {
   const cerrarModal = () => {
     setMostrarModal(false);
     setEditando(null);
-    setNombre('');
-    setCodigo('');
+    setNombre("");
+    setCodigo("");
   };
 
   // Maneja el envío del formulario (crear o actualizar país)
@@ -63,21 +74,36 @@ const PaisList = () => {
       await createPais({ nombre, codigo });
     }
 
-    cerrarModal();     // Cierra el modal después de guardar
-    fetchPaises();     // Refresca la lista de países
+    cerrarModal(); // Cierra el modal después de guardar
+    fetchPaises(); // Refresca la lista de países
   };
 
   // Elimina un país por su ID, previa confirmación
   const handleDelete = async (id) => {
-    if (confirm('¿Eliminar este país?')) {
-      await deletePais(id);  // Llama al servicio para eliminar
-      fetchPaises();         // Refresca la lista
+    if (confirm("¿Eliminar este país?")) {
+      await deletePais(id); // Llama al servicio para eliminar
+      fetchPaises(); // Refresca la lista
     }
   };
 
+  // Función para obtener medallas por país
+  const verMedallas = async (id) => {
+  try {
+    const pais = await getPaisConMedallas(id); // Usa el servicio para buscar medallas por país
+    setPaisSeleccionado(pais);
+    setMedallas(pais.medallas);
+    setMostrarMedallas(true);
+  } catch (error) {
+    console.error('Error al cargar medallas:', error);
+    alert('No se pudieron cargar las medallas del país.');
+  }
+};
+
+
+
   // Renderizado del componente
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+    <div style={{ maxWidth: "600px", margin: "0 auto" }}>
       <h2>Listado de Países</h2>
 
       {/* Botón para abrir el modal en modo creación */}
@@ -90,6 +116,7 @@ const PaisList = () => {
             <th>Nombre</th>
             <th>Código</th>
             <th>Acciones</th>
+            <th>Medallas</th>
           </tr>
         </thead>
         <tbody>
@@ -102,7 +129,18 @@ const PaisList = () => {
                 {/* Botón para editar un país */}
                 <button onClick={() => abrirModal(pais)}>Editar</button>
                 {/* Botón para eliminar un país */}
-                <button className="delete" onClick={() => handleDelete(pais.id)}>Eliminar</button>
+                <button
+                  className="delete"
+                  onClick={() => handleDelete(pais.id)}
+                >
+                  Eliminar
+                </button>
+              </td>
+              <td>
+                {/* Botón para ver medallas del país */}
+                <button onClick={() => verMedallas(pais.id)}>
+                  Ver Medallas
+                </button>
               </td>
             </tr>
           ))}
@@ -119,7 +157,7 @@ const PaisList = () => {
       {mostrarModal && (
         <div className="modal">
           <div className="modal-content">
-            <h3>{editando ? 'Editar País' : 'Agregar País'}</h3>
+            <h3>{editando ? "Editar País" : "Agregar País"}</h3>
             <form onSubmit={handleSubmit}>
               <div>
                 {/* Campo de entrada para el nombre del país */}
@@ -141,16 +179,41 @@ const PaisList = () => {
                   required
                 />
               </div>
-              <div style={{ marginTop: '10px' }}>
+              <div style={{ marginTop: "10px" }}>
                 {/* Botón para enviar (agregar o actualizar) */}
-                <button type="submit">{editando ? 'Actualizar' : 'Agregar'}</button>
+                <button type="submit">
+                  {editando ? "Actualizar" : "Agregar"}
+                </button>
                 {/* Botón para cancelar y cerrar el modal */}
-                <button type="button" className="cancel" onClick={cerrarModal}>Cancelar</button>
+                <button type="button" className="cancel" onClick={cerrarModal}>
+                  Cancelar
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {mostrarMedallas && (
+  <div className="modal">
+    <div className="modal-content">
+      <h3>Medallas de {paisSeleccionado?.nombre}</h3>
+      {medallas.length > 0 ? (
+        <ul>
+          {medallas.map((medalla) => (
+            <li key={medalla.id}>
+              🏅 {medalla.tipo} - {medalla.deporte}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Este país no tiene medallas registradas.</p>
+      )}
+      <button onClick={() => setMostrarMedallas(false)}>Cerrar</button>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };

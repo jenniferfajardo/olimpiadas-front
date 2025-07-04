@@ -54,3 +54,15 @@ export const updatePais = async (id, pais) => {
 export const deletePais = async (id) => {
   await axios.delete(`${API_URL}/paises/${id}`);
 };
+
+
+/**
+ * Obtiene un país por ID junto con sus medallas
+ * @param {*number|string} id - ID del país a buscar
+ * @returns lista Medallas de un país
+ */
+
+export const getPaisConMedallas = async (id) => {
+  const response = await axios.get(`${API_URL}/paises/${id}`);
+  return response.data.data;
+};
